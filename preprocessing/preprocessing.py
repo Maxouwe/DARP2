@@ -9,41 +9,42 @@ from collections import Counter
 import preprocessFunctions as pfs
 import os
 import descriptiveFunctions as dfs
+
 ##################         ##################
 ##################functions##################
 ##################         ################## 
-def tokenizeProductDescription(df):
+def normalizeCSV(df, columnName):
     #remove punctuation
-    pfs.removePunctuation(df,'product_description')
+    pfs.removePunctuation(df,columnName)
     #turns each string under columnName into a list of strings
-    pfs.tokenizeColumn(df, 'product_description')
-    pfs.lemmatizeColumn(df, 'product_description')
+    pfs.tokenizeColumn(df, columnName)
     #remove stop words
-    pfs.removeStopWordsFromColumn(df, 'product_description')
+    pfs.removeStopWordsFromColumn(df, columnName)
     #remove numbers and units
-    pfs.removeUnitsAndNumbersFromColumn(df, 'product_description')   
+    pfs.removeUnitsAndNumbersFromColumn(df, columnName)   
+    pfs.lemmatizeColumn(df, columnName)
 
 def main():
-    #make a small version of product_descriptions to test functions faster
-    # if os.path.exists("resources/small_pd.csv"):
-    #     os.remove("resources/small_pd.csv")
+    
+    #dont forget to manually add product_descriptions.csv to the local directory if its not there
+    pddf = pd.read_csv("resources/product_descriptions.csv", encoding="latin1")
+    qpdf = pd.read_csv("resources/query_product.csv", encoding="latin1")
 
-    # df = pd.read_csv("resources/product_descriptions.csv", encoding="latin1")
-    # pp.makeSmallProductDescriptionsTable(df)
-    # df = pd.read_csv("resources/small_pd.csv", encoding="latin1")
+    #normalizing the product descriptions takes a long time
+    #especially the lemmatization 
+    #you have to wait until the console returns
+    #normalize product descriptions
+    if not os.path.exists("resources/normalized_pd.csv"):
+        normalizeCSV(pddf, 'product_description')    
+        pddf.to_csv("resources/normalized_pd.csv")
 
-    # tokenizeProductDescription(df)
+    #normalize queries and product title
+    if not os.path.exists("resources/normalized_qp.csv"):
+        normalizeCSV(qpdf, 'search_term')
+        normalizeCSV(qpdf, 'product_title')     
+        qpdf.to_csv("resources/normalized_qp.csv")
 
-    # #write to csv file
-    # if os.path.exists("resources/processed_product_descriptions.csv"):
-    #     os.remove("resources/processed_product_descriptions.csv")
-    # df.to_csv("resources/processed_product_descriptions.csv")
-    # Specify the path to your CSV file
-    csv_path = "resources/query_product.csv"
-
-    # Read the CSV file into a pandas DataFrame
-    df = pd.read_csv(csv_path, encoding="latin1")
-    dfs.showCountUniqueQueries(df)
+    
 
 
 
