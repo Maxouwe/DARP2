@@ -18,6 +18,7 @@ def showCountUniqueQueries(df):
     print(df['search_term'].nunique())
 
 
+
     
     
 

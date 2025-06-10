@@ -3,6 +3,7 @@ def check_words(row):
     words_column2 = set(row['search_term'].lower().split())
     return int(words_column2.issubset(words_column1))
 
+#gets the relevance rating according to ordinal logistic regression
 def getPredictedRelevance(row):
     probs = [row['p1'], row['p2'], row['p3']]
     max = 0

@@ -6,6 +6,8 @@ import nltk
 import string
 from nltk.corpus import wordnet
 from nltk.tag import pos_tag
+from ast import literal_eval
+import numpy as np
 
 #not needed if youve executed these once already
 #nltk.download('stopwords')
@@ -87,3 +89,55 @@ def lemmatizeRow(row, columnName, lemmatizer):
 def makeSmallProductDescriptionsTable(df):
     filtered_df = df[df['product_uid'] <= 100030]
     filtered_df.to_csv("resources/small_pd.csv")
+
+#when tokenizing a string it actually gets turned into a string looking like "[tokens]"
+#so we need to turn it into a actual list
+def turnStringFieldToList(df, columnName):
+    df[columnName] = df[columnName].apply(literal_eval)
+
+#creates qfscores of all query terms
+def createQFScores(df):
+    #contains all current queryFrequencies
+    queryFrequencies = dict()
+    queryFrequencies['RQFMax'] = 0
+    for i in df:
+        df.apply(updateQueryFrequenciesRow, axis=1, args=[queryFrequencies])
+
+    #dataframe containing all current qfscores
+    qfdf = pd.DataFrame(columns=['term', 'qfscore'])
+    for term in queryFrequencies:
+        qfdf.loc[len(qfdf)] = [term, (queryFrequencies[term]+1)/(queryFrequencies['RQFMax'] + 1)]
+    return qfdf
+
+#used in createQFScores
+def updateQueryFrequenciesRow(row, queryFrequencies):
+    for token in row['search_term']:
+        if token in queryFrequencies:
+            queryFrequencies[token] += 1
+        else:
+            queryFrequencies[token] = 1
+        if queryFrequencies[token] > queryFrequencies['RQFMax']:
+            queryFrequencies['RQFMax'] = queryFrequencies[token]
+    
+         
+def createIDFScores(df, columnName):
+    documentFrequencies = dict()
+    for i in df:
+        df.apply(updateTermFrequenciesRow, axis=1, args=[documentFrequencies, columnName])
+    idfdf = pd.DataFrame(columns=['term', 'idfscore'])
+    N = len(df)
+    for term in documentFrequencies:
+        idfdf.loc[len(idfdf)] = [term, np.log(N/documentFrequencies[term])]
+    return idfdf
+
+def updateTermFrequenciesRow(row, documentFrequencies, columnName):
+    #we want to increment for duplicates
+    rowe = set(row[columnName])
+    for token in rowe:
+        if token in documentFrequencies:
+            documentFrequencies[token] += 1
+        else:
+            documentFrequencies[token] = 1
+
+
+
