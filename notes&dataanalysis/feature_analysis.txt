@@ -1,0 +1,13 @@
+all_words_in_title:
+    when normalizing product title and query columns
+    they get simplified, mainly because of lemmatization
+    so if we have "walks" in title and "walk" in query
+    then all_words_in_title will still match on that word.
+    When using normalized qp the slope of the model line is a little bit steeper.
+    When using only the feature all_words_in_title r-squared with normalized_qp.csv
+    is 0.007. When using query_product.csv r-squared is 0.05.
+    So all_words_in_title provides a better fit when using query_product.csv
+    It does make sense because query_product is the real data
+    and normalized_qp is "simplified" data because more words map to the same
+    lemmatized word. Mainly because of the higher r-squared value 
+    we used query_product.csv instead of normalized_qp.csv

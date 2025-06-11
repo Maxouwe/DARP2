@@ -1,3 +1,9 @@
+#these are features executed per row
+#to use these features you use d.apply(feature, axis=1, args=[arg1, arg2])
+#where d is the data you want to use the feature on
+#axis=1 means you apply the feature to every row
+#and the array of args is are the parameters, aside from the row itself, that get passed to the function
+#see main.py line 29 and preprocessFunctions.py line 126 for examples
 def check_words(row):
     words_column1 = set(row['product_title'].lower().split())
     words_column2 = set(row['search_term'].lower().split())
@@ -13,7 +19,4 @@ def getPredictedRelevance(row):
             max = probs[i]
             classification = i + 1
     return classification
-
-
-    
 

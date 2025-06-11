@@ -131,7 +131,7 @@ def createIDFScores(df, columnName):
     return idfdf
 
 def updateTermFrequenciesRow(row, documentFrequencies, columnName):
-    #we want to increment for duplicates
+    #we dont want to increment for duplicates
     rowe = set(row[columnName])
     for token in rowe:
         if token in documentFrequencies:
