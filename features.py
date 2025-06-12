@@ -1,3 +1,5 @@
+import pandas as pd
+import numpy as np
 #these are features executed per row
 #to use these features you use d.apply(feature, axis=1, args=[arg1, arg2])
 #where d is the data you want to use the feature on
@@ -20,3 +22,17 @@ def getPredictedRelevance(row):
             classification = i + 1
     return classification
 
+def getQFScore(row, qfdf):
+    intersect = set.intersection(set(row['normalized_title']), set(row['normalized_st']))
+    scores = qfdf[qfdf['term'].isin(intersect)]['qfscore']
+    return scores.sum()
+
+def getTitleIDFScore(row, idfdf):
+    intersect = set.intersection(set(row['normalized_title']), set(row['normalized_st']))
+    scores = idfdf[idfdf['term'].isin(intersect)]['idfscore']
+    return scores.sum()
+
+def getPDIDFScore(row, idfdf):
+    intersect = set.intersection(set(row['normalized_pd']), set(row['normalized_st']))
+    scores = idfdf[idfdf['term'].isin(intersect)]['idfscore']
+    return scores.sum()

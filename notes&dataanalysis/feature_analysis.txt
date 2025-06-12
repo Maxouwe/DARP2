@@ -11,3 +11,33 @@ all_words_in_title:
     and normalized_qp is "simplified" data because more words map to the same
     lemmatized word. Mainly because of the higher r-squared value 
     we used query_product.csv instead of normalized_qp.csv
+    Analyze logistic classification
+qfscore:
+    To determine the qfscore we use the normalized product title and
+    normalized search term. the coefficient is 0.1725 which makes sense
+    because the higher the qfscore the higher the relevance. QF-scoring
+    separates more important words from less important words where
+    importance is determined by their query frequency. Reconsidering this
+    we just want to predict the relevance and not think about what to return
+    when there are not many answers. So qf might be not such an effective feature.
+    When we look at the scatter plot though. We can see the higher the qf sum
+    The less low relevance scores there are. So we are filtering out the tuples
+    with lower relevance score, so this might be a good feature after all.
+    And the slope is pretty high 0.1725 which is good. 
+    Analyze logistic classification
+titleidfscore:
+    To determine the idfscore we use the normalized product title and 
+    normalized search term. We separate less important words from 
+    more important words where importance is determined by how
+    often a word appears in the database. The more it appears
+    the less important the word is, is the assumption.
+    More analysis of linear regression
+    More analisys of logistic classification
+pdidfscore:
+    To determine the idfscore we use the normalized product title and 
+    normalized search term. We separate less important words from 
+    more important words where importance is determined by how
+    often a word appears in the database. The more it appears
+    the less important the word is, is the assumption.
+    More analysis of linear regression
+    More analisys of logistic classification

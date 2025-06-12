@@ -111,7 +111,7 @@ def createQFScores(df):
 
 #used in createQFScores
 def updateQueryFrequenciesRow(row, queryFrequencies):
-    for token in row['search_term']:
+    for token in row['normalized_st']:
         if token in queryFrequencies:
             queryFrequencies[token] += 1
         else:
