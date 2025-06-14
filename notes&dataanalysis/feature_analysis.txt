@@ -41,3 +41,38 @@ pdidfscore:
     the less important the word is, is the assumption.
     More analysis of linear regression
     More analisys of logistic classification
+amount_of_shared_words:
+    We made a feature that counts all the words that are shared between
+    the product title and the search terms. When using the normalized
+    data the shared word counting seems to be much more effective than
+    when using the not normalized data.
+    Normalized r2=0.06 > not-normalized r2=0.003
+    More analysis
+word_difference_ratio:
+    We tried out a different feature that is strongly correlated to amount amount_of_shared_words
+    Just to see which one yields better results so we could chose the better of the two.
+    word_difference_ratio looks the length of set of all words that are not shared
+    between the search_term and product title. And divide it by the
+    length of the union of search_term and product_title.
+    It turns out word_difference has a higher r2 value.
+    And in the proportional logistic part word_difference_ratio 
+    predicts relevance==2 quite much better, relevance==3 slightly worse.
+    But in the multinomial logistic part it doessnt try to predict any relevance==1
+    where are shared_words does try to predict relevance==1 and does so 
+    some of them correctly. So we prefer shared_words over word_difference_ratio
+shared_words_pd:
+    We also look at how many of the search title and description share words.
+    We will keep this feature, but difference_word_ratio is better because the correlation
+    is less strong with all_words_in_title.
+    Analyze regressions. 
+First correlation test:
+    It seems that normalized_shared_words, normalized_shared_words_pd, titleidf_score
+    and pd_idf_score are all strongly correlated. Which makes sense
+    If a word appears in the title its gonna appear in the description most likely too.
+    And both idf and shared words scores are higher the more search term words
+    match with words in descr/title, they both have a sum that gets incremented
+    for each matching word. So we have to remove atleast 3 of them.
+    Looking at the correlation matrix it seems that pd_idf_score correlates
+    the least with all_words in title and qf_score, the ones we want to keep.
+    So we decided to keep pd_idf_score and get rid of the other 3.
+

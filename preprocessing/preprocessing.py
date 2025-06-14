@@ -37,8 +37,8 @@ def main():
         normalizeCSV(pddf, 'product_description')    
         pddf.to_csv("resources/normalized_pd.csv")
 
-    pddf = pd.read_csv("resources/normalized_pd.csv", encoding="latin1")
-    pfs.turnStringFieldToList(pddf, 'normalized_pd')
+    # pddf = pd.read_csv("resources/normalized_pd.csv", encoding="latin1")
+    # pfs.turnStringFieldToList(pddf, 'normalized_pd')
     
 
 
@@ -49,9 +49,9 @@ def main():
         normalizeCSV(qpdf, 'product_title')     
         qpdf.to_csv("resources/normalized_qp.csv") 
         
-    qpdf = pd.read_csv("resources/normalized_qp.csv", encoding="latin1")
-    pfs.turnStringFieldToList(qpdf, 'normalized_st')
-    pfs.turnStringFieldToList(qpdf, 'normalized_title')
+    # qpdf = pd.read_csv("resources/normalized_qp.csv", encoding="latin1")
+    # pfs.turnStringFieldToList(qpdf, 'normalized_st')
+    # pfs.turnStringFieldToList(qpdf, 'normalized_title')
     
 
     #make qfscore table
@@ -62,6 +62,13 @@ def main():
     if not os.path.exists("resources/qp_idf_scores.csv"):
         qp_idf_Scores = pfs.createIDFScores(qpdf.drop_duplicates(subset=['product_uid']), 'normalized_title')
         qp_idf_Scores.to_csv("resources/qp_idf_scores.csv")
+
+    if not os.path.exists("resources/word_positions.csv"):
+        pos_lists = pfs.createPosLists(pddf)
+        pos_lists.to_csv("resources/word_positions.csv")
+
+    # pos_lists = pd.read_csv("resources/word_positions.csv")
+    # pfs.turnStringFieldToList(pos_lists, 'position_lists')
 
     #make product description idf table
     #do not run this, it takes for ever,

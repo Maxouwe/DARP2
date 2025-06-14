@@ -139,5 +139,23 @@ def updateTermFrequenciesRow(row, documentFrequencies, columnName):
         else:
             documentFrequencies[token] = 1
 
+def createPosLists(pddf):
+    posdf = pd.DataFrame(columns = ['product_uid', 'position_lists'])
+    #position_lists contains for every term in the normalized description
+    #a list of its position occurrence
+    pddf.apply(createPosListsRow, axis=1, args=[posdf])
+    return posdf
+
+def createPosListsRow(row, posdf):
+    positions = dict()
+    description = row['normalized_pd']
+    for i in range(0, len(description)):
+        word = description[i]
+        if not word in positions:
+            positions[word] = list()
+            positions[word].append(i)
+        else:
+            positions[word].append(i)
+    posdf.loc[len(posdf)] = [row['product_uid'], positions]
 
 

@@ -9,6 +9,7 @@ import features
 from statsmodels.miscmodels.ordinal_model import OrderedModel
 from statsmodels.discrete.discrete_model import MNLogit
 from ast import literal_eval
+import statsmodels.graphics.api as smg
 
 #There are two sections here 
 #First section shows how to do linear regression
@@ -21,15 +22,19 @@ csv_path = "resources/query_product.csv"
 df = pd.read_csv(csv_path, encoding="latin1")
 nqpdf = pd.read_csv("resources/normalized_qp.csv")
 npddf = pd.read_csv("resources/normalized_pd.csv")
+pos_lists = pd.read_csv("resources/word_positions.csv")
 df = df.join(nqpdf.set_index('id'), on='id')
 df = df.join(npddf.set_index('product_uid'), on='product_uid')
+df = df.join(pos_lists.set_index('product_uid'), on='product_uid')
 df['normalized_st'] = df['normalized_st'].apply(literal_eval)
 df['normalized_title'] = df['normalized_title'].apply(literal_eval)
 df['normalized_pd'] = df['normalized_pd'].apply(literal_eval)
+df['position_lists'] = df['position_lists'].apply(literal_eval)
 
 qfdf = pd.read_csv("resources/qf_scores.csv")
 qpidfdf = pd.read_csv("resources/qp_idf_scores.csv")
 pdidfdf = pd.read_csv("resources/pd_idf_scores.csv")
+
 
 # Set the training size
 training_size = 50000
@@ -37,14 +42,20 @@ training_size = 50000
 # Split the DataFrame into training and test sets
 train_data, test_data = train_test_split(df, test_size=(len(df) - training_size), random_state=42)
 
-# Creates a tables containing product_query_id and a score for all_words_in_title 
+# Creates a tables containing product_query_id and a score for normalized_shared_words 
 # train_data['all_words_in_title'] = train_data.apply(features.check_words, axis=1)
 # test_data['all_words_in_title'] = test_data.apply(features.check_words, axis=1)
-train_data['all_words_in_title'] = train_data.apply(features.check_words, axis=1)
-test_data['all_words_in_title'] = test_data.apply(features.check_words, axis=1)
+# train_data['qf_score'] = train_data.apply(features.getQFScore, axis=1, args=[qfdf])
+# test_data['qf_score'] = test_data.apply(features.getQFScore, axis=1, args=[qfdf])
+# train_data['pd_idf_score'] = train_data.apply(features.getPDIDFScore, axis=1, args=[pdidfdf])
+# test_data['pd_idf_score'] = test_data.apply(features.getPDIDFScore, axis=1, args=[pdidfdf])
+
+train_data['q_term_prox'] = train_data.apply(features.getQueryTermProximity, axis=1)
+test_data['q_term_prox'] = test_data.apply(features.getQueryTermProximity, axis=1)
 
 # Define the feature and target variables
-X = train_data['all_words_in_title']
+# X = train_data[['all_words_in_title', 'qf_score', 'pd_idf_score']]
+X = train_data['q_term_prox']
 y = train_data['relevance']
 
 # Add a constant term to the feature variable
@@ -58,7 +69,7 @@ model = sm.OLS(y, X)
 # P>|t| value basically means, what is the chance the relevance does not depend on your feature
 # If its smaller than 0.01 then its a significant feature
 # If not then we should adjust/make a new feature
-# Here you can see all_words_in_title is a significant feature
+# Here you can see normalized_shared_words is a significant feature
 results = model.fit()
 print(X.describe())
 print(results.summary())
@@ -67,7 +78,8 @@ print(results.summary())
 #now you just have to inject the test data into the model
 #and compare output of the model with the actual relevance of the test data
 
-X_test = test_data['all_words_in_title']
+# X_test = test_data[['all_words_in_title','qf_score','pd_idf_score']]
+X_test = test_data['q_term_prox']
 y_test = test_data['relevance']
 
 #so the B0 coefficient also gets taken into the calculation
@@ -96,23 +108,30 @@ weight_counter = Counter(y_test)
 #so the size of the point for value yi in the plot corresponds with how many times it occurs in the data
 weights = [weight_counter[i]/10 for i in y_test]
 
-#x-axis is score for all_words_in_title
+#this piece of code is for checking features individually
+#and see their lines
+#x-axis is score for normalized_shared_words
 #y-axis is the relevance 
 #make scatter plot
-plt.scatter(test_data['all_words_in_title'], y_test, label='Actual', s=weights)
+# plt.scatter(test_data['normalized_shared_words'], y_test, label='Actual', s=weights)
 
-#also make a line for how the model predicts relevance score based on the feature
-#you can see the model predicts if all_words_in_title = 1 then relevance score is higher
-plt.plot(test_data['all_words_in_title'], y_pred, color='red', label='Fitted Line')
+# #also make a line for how the model predicts relevance score based on the feature
+# #you can see the model predicts if normalized_shared_words = 1 then relevance score is higher
+# plt.plot(test_data['normalized_shared_words'], y_pred, color='red', label='Fitted Line')
 
-plt.xlabel('idfsum of product description')
-plt.ylabel('Relevance Score')
-plt.title('Linear Regression: Fitted Line')
-plt.legend()
+# plt.xlabel('normalized_shared_words')
+# plt.ylabel('Relevance Score')
+# plt.title('Linear Regression: Fitted Line')
+# plt.legend()
 
 #all the previous plt.f() calls modify some plot object
 #call plt.show() to actually show the plot
 plt.show()
+
+#check correlation between features
+# correlation_matrix = np.corrcoef(train_data[['all_words_in_title', 'qf_score','pd_idf_score']].T)
+# smg.plot_corr(correlation_matrix,  xnames=[ 'all_words_in_title', 'qf_score','pd_idf_score'])
+# plt.show()
 
 ##########################################################################################################
 #so that concludes the linear regression part now there will be an example for ordinal logistic regression
@@ -128,9 +147,12 @@ plt.show()
 logit_train_data = train_data.where(train_data.relevance == np.floor(train_data.relevance)).dropna()
 logit_test_data = test_data.where(test_data.relevance == np.floor(test_data.relevance)).dropna()
 
-#the all_words_in_title feature was already applied to the data in the linear regression section
+
+
+#the normalized_shared_words feature was already applied to the data in the linear regression section
 #ordinal logistic regression does not use an intercept so we dont add a column of 1's to X like we did in linear regression
-X = logit_train_data['all_words_in_title']
+# X = logit_train_data[[ 'all_words_in_title', 'qf_score', 'pd_idf_score']]
+X = logit_train_data['q_term_prox']
 y = logit_train_data['relevance']
 
 
@@ -148,13 +170,15 @@ logit_model = OrderedModel(y, X, distr='logit')
 #is x groter dan threshold 2.0/3.0 dan is de output relevance = 3
 #ook hier kun je aflezen met P>|Z| hoe significant de coefficienten zijn (net zoals bij linear regression)
 #het blijkt dat alle coefficienten hier significant zijn
-#dus ook voor ordinal logistic regression is all_words_in_title een goede feature
+#dus ook voor ordinal logistic regression is normalized_shared_words een goede feature
 logit_results = logit_model.fit()
 print(logit_results.summary())
 
 #now we are going to test the model on the test data
-X_test = logit_test_data['all_words_in_title']
+# X_test = logit_test_data[[ 'all_words_in_title', 'qf_score', 'pd_idf_score']]
+X_test = logit_test_data['q_term_prox']
 y_test = logit_test_data['relevance']
+
 
 #see how the model classifies the test_data tuples
 #the linear regression predict() function can take the data directly
@@ -183,7 +207,10 @@ y_test.reset_index(drop=True, inplace=True)
 #you can see in the console that p3 is the highest for every tuple
 #because our model is one sided because it has only one feature
 #so our model predicts every tuple to be of relevance level 3
-print(pd.concat([y_test, y_pred], axis=1)[['relevance','p1', 'p2', 'p3', 'predicted_relevance']])
+
+res = pd.concat([y_test, y_pred], axis=1)[['relevance','p1', 'p2', 'p3', 'predicted_relevance']]
+print(res)
+
 
 #you can read the confusion matrix as follows
 #on the bottom you read predicted class 0 to 2 (which is relevance level 1 to 3)
@@ -219,12 +246,13 @@ logit_model = MNLogit(y, X)
 #is x groter dan threshold 2.0/3.0 dan is de output relevance = 3
 #ook hier kun je aflezen met P>|Z| hoe significant de coefficienten zijn (net zoals bij linear regression)
 #het blijkt dat alle coefficienten hier significant zijn
-#dus ook voor ordinal logistic regression is all_words_in_title een goede feature
+#dus ook voor ordinal logistic regression is normalized_shared_words een goede feature
 logit_results = logit_model.fit()
 print(logit_results.summary())
 
 #now we are going to test the model on the test data
-X_test = logit_test_data['all_words_in_title']
+# X_test = logit_test_data[['all_words_in_title', 'qf_score', 'pd_idf_score']]
+X_test = logit_test_data['q_term_prox']
 y_test = logit_test_data['relevance']
 
 #see how the model classifies the test_data tuples
@@ -254,7 +282,9 @@ y_test.reset_index(drop=True, inplace=True)
 #you can see in the console that p3 is the highest for every tuple
 #because our model is one sided because it has only one feature
 #so our model predicts every tuple to be of relevance level 3
-print(pd.concat([y_test, y_pred], axis=1)[['relevance','p1', 'p2', 'p3', 'predicted_relevance']])
+res = pd.concat([y_test, y_pred], axis=1)[['relevance','p1', 'p2', 'p3', 'predicted_relevance']]
+print(res)
+
 
 #you can read the confusion matrix as follows
 #on the bottom you read predicted class 0 to 2 (which is relevance level 1 to 3)
