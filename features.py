@@ -84,22 +84,40 @@ def getNrOfSharedWords(row):
     return shared_words
 
 def getProximityScoreRow(row):
-    k = getNrOfSharedWords(row)
+    
     search_terms = list(row['normalized_st'])
-    score_weight = k/len(search_terms)
     pos_lists = dict(row['position_lists'])
-    heads = list()
-    shortestInterval = 2**61
-    finished = False
-    while not finished:
-        for term in search_terms:
-            heads.append([pos_lists[term].pop(0), term])
-            heads.sort()
-        if heads.last - heads.first < shortestInterval:
-            shortestInterval = heads.last - heads.first
-        if len(pos_lists[term]) < 1:
-            finished = True
-    return shortestInterval
+    currentInterval = list()
+    shortestLen = 2**31
+    for term in search_terms:
+        if term in pos_lists:
+            currentInterval.append([pos_lists[term].pop(0), term])
+            currentInterval.sort()
+    if len(currentInterval) < 2:
+        return 0
+    while True:
+        if len(pos_lists[currentInterval[0][1]]) < 1:
+            break
+        p = [pos_lists[currentInterval[0][1]].pop(0), currentInterval[0][0]]
+        q = [currentInterval[1][0], currentInterval[1][1]]
+        if p[0] > currentInterval[-1][0]:
+            if currentInterval[-1][0] - currentInterval[0][0] < shortestLen:
+                shortestLen = currentInterval[-1][0] - currentInterval[0][0]
+                currentInterval.pop(0)
+                currentInterval.append(p)
+        else:
+            currentInterval.pop(0)
+            if p[0] < q[0]:
+                currentInterval.insert(0, p)
+            else:
+                currentInterval.insert(0, q)
+            currentInterval.sort()
+
+    #dont forget to weight the score
+    # k = getNrOfSharedWords(row)
+    # return shortestLen*k/len(row['normalized_st'])
+    return shortestLen
+
 
 
 
