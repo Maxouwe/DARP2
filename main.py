@@ -28,11 +28,11 @@ pos_lists = pd.read_csv("resources/word_positions.csv")
 df = df.join(nqpdf.set_index('id'), on='id')
 df = df.join(npddf.set_index('product_uid'), on='product_uid')
 df = df.join(pos_lists.set_index('product_uid'), on='product_uid')
+df = df.join(pos_lists.set_index('product_uid'), on='product_uid')
 df['normalized_st'] = df['normalized_st'].apply(literal_eval)
 df['normalized_title'] = df['normalized_title'].apply(literal_eval)
 df['normalized_pd'] = df['normalized_pd'].apply(literal_eval)
 df['position_lists'] = df['position_lists'].apply(literal_eval)
-
 
 qfdf = pd.read_csv("resources/qf_scores.csv")
 qpidfdf = pd.read_csv("resources/qp_idf_scores.csv")
