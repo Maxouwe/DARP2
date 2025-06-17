@@ -15,20 +15,21 @@ import os
 #First section shows how to do linear regression
 #Second section shows how to do ordinal logistic regression
 
+print("joining and turning strings to datastructures")
 # Specify the path to your CSV file
 csv_path = "resources/query_product.csv"
 
 # Read the CSV file into a pandas DataFrame
 df = pd.read_csv(csv_path, encoding="latin1")
 
-
 nqpdf = pd.read_csv("resources/normalized_qp.csv")
 npddf = pd.read_csv("resources/normalized_pd.csv")
 pos_lists = pd.read_csv("resources/word_positions.csv")
+vecsims = pd.read_csv("resources/qp_with_vecsim.csv")
 df = df.join(nqpdf.set_index('id'), on='id')
 df = df.join(npddf.set_index('product_uid'), on='product_uid')
 df = df.join(pos_lists.set_index('product_uid'), on='product_uid')
-df = df.join(pos_lists.set_index('product_uid'), on='product_uid')
+df = df.join(vecsims.set_index('id'), on='id')
 df['normalized_st'] = df['normalized_st'].apply(literal_eval)
 df['normalized_title'] = df['normalized_title'].apply(literal_eval)
 df['normalized_pd'] = df['normalized_pd'].apply(literal_eval)
@@ -38,7 +39,7 @@ qfdf = pd.read_csv("resources/qf_scores.csv")
 qpidfdf = pd.read_csv("resources/qp_idf_scores.csv")
 pdidfdf = pd.read_csv("resources/pd_idf_scores.csv")
 
-
+print("start training model")
 # df['score'] = df.apply(features.getProximityScoreRow, axis = 1)
 # if os.path.exists("resources/testFeat.csv"):
 #     os.remove("resources/testFeat.csv")
@@ -58,12 +59,12 @@ train_data, test_data = train_test_split(df, test_size=(len(df) - training_size)
 # train_data['pd_idf_score'] = train_data.apply(features.getPDIDFScore, axis=1, args=[pdidfdf])
 # test_data['pd_idf_score'] = test_data.apply(features.getPDIDFScore, axis=1, args=[pdidfdf])
 
-train_data['keyword_density'] = train_data.apply(features.getKeywordDensity, axis=1)
-test_data['keyword_density'] = test_data.apply(features.getKeywordDensity, axis=1)
+# train_data['keyword_density'] = train_data.apply(features.getKeywordDensity, axis=1)
+# test_data['keyword_density'] = test_data.apply(features.getKeywordDensity, axis=1)
 
 # Define the feature and target variables
 # X = train_data[['all_words_in_title', 'qf_score', 'pd_idf_score']]
-X = train_data['keyword_density']
+X = train_data['DescriptionVecSim']
 y = train_data['relevance']
 
 # Add a constant term to the feature variable
@@ -87,7 +88,7 @@ print(results.summary())
 #and compare output of the model with the actual relevance of the test data
 
 # X_test = test_data[['all_words_in_title','qf_score','pd_idf_score']]
-X_test = test_data['keyword_density']
+X_test = test_data['DescriptionVecSim']
 y_test = test_data['relevance']
 
 #so the B0 coefficient also gets taken into the calculation
@@ -121,13 +122,13 @@ weights = [weight_counter[i]/10 for i in y_test]
 #x-axis is score for normalized_shared_words
 #y-axis is the relevance 
 #make scatter plot
-plt.scatter(test_data['keyword_density'], y_test, label='Actual', s=weights)
+plt.scatter(test_data['DescriptionVecSim'], y_test, label='Actual', s=weights)
 
 #also make a line for how the model predicts relevance score based on the feature
 #you can see the model predicts if normalized_shared_words = 1 then relevance score is higher
-plt.plot(test_data['keyword_density'], y_pred, color='red', label='Fitted Line')
+plt.plot(test_data['DescriptionVecSim'], y_pred, color='red', label='Fitted Line')
 
-plt.xlabel('keyword_density')
+plt.xlabel('DescriptionVecSim')
 plt.ylabel('Relevance Score')
 plt.title('Linear Regression: Fitted Line')
 plt.legend()
@@ -160,7 +161,7 @@ logit_test_data = test_data.where(test_data.relevance == np.floor(test_data.rele
 #the normalized_shared_words feature was already applied to the data in the linear regression section
 #ordinal logistic regression does not use an intercept so we dont add a column of 1's to X like we did in linear regression
 # X = logit_train_data[[ 'all_words_in_title', 'qf_score', 'pd_idf_score']]
-X = logit_train_data['keyword_density']
+X = logit_train_data['DescriptionVecSim']
 y = logit_train_data['relevance']
 
 
@@ -184,7 +185,7 @@ print(logit_results.summary())
 
 #now we are going to test the model on the test data
 # X_test = logit_test_data[[ 'all_words_in_title', 'qf_score', 'pd_idf_score']]
-X_test = logit_test_data['keyword_density']
+X_test = logit_test_data['DescriptionVecSim']
 y_test = logit_test_data['relevance']
 
 
@@ -260,7 +261,7 @@ print(logit_results.summary())
 
 #now we are going to test the model on the test data
 # X_test = logit_test_data[['all_words_in_title', 'qf_score', 'pd_idf_score']]
-X_test = logit_test_data['keyword_density']
+X_test = logit_test_data['DescriptionVecSim']
 y_test = logit_test_data['relevance']
 
 #see how the model classifies the test_data tuples

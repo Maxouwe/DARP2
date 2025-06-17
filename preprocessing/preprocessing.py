@@ -122,6 +122,7 @@ def main():
         merged = merged.drop('normalized_title', axis=1)
         merged = merged.drop('normalized_st', axis=1)
         merged = merged.drop('normalized_pd', axis=1)
+        merged = merged.drop('product_title', axis=1)
         # Bewaar alles:
         merged.to_csv("resources/qp_with_vecsim.csv", index=False)
 
