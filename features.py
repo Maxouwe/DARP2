@@ -78,28 +78,37 @@ def getPDIDFScore(row, idfdf):
 #needed to weight the proximity score
 def getNrOfSharedWords(row):
     shared_words = 0
-    for w in row['normalized_st']:
+    for w in set(row['normalized_st']):
         if w in row['position_lists']:
             shared_words+= 1
     return shared_words
 
+
+
 def getProximityScoreRow(row):
     
-    search_terms = list(row['normalized_st'])
+    search_terms = list(set(row['normalized_st']))
     pos_lists = dict(row['position_lists'])
+
     currentInterval = list()
     shortestLen = 2**31
+    k = getNrOfSharedWords(row)
+    if k == 0:
+        return 0
+    if k == 1:
+        return 1/np.sqrt(len(row['normalized_pd'])/2)
     for term in search_terms:
         if term in pos_lists:
             currentInterval.append([pos_lists[term].pop(0), term])
             currentInterval.sort()
-    if len(currentInterval) < 2:
-        return 0
     while True:
         if len(pos_lists[currentInterval[0][1]]) < 1:
+            if (currentInterval[-1][0] - currentInterval[0][0] < shortestLen):
+                shortestLen = currentInterval[-1][0] - currentInterval[0][0]
             break
-        p = [pos_lists[currentInterval[0][1]].pop(0), currentInterval[0][0]]
+        p = [pos_lists[currentInterval[0][1]].pop(0), currentInterval[0][1]]
         q = [currentInterval[1][0], currentInterval[1][1]]
+        
         if p[0] > currentInterval[-1][0]:
             if currentInterval[-1][0] - currentInterval[0][0] < shortestLen:
                 shortestLen = currentInterval[-1][0] - currentInterval[0][0]
@@ -112,14 +121,15 @@ def getProximityScoreRow(row):
             else:
                 currentInterval.insert(0, q)
             currentInterval.sort()
+    return 1/np.sqrt(shortestLen)
 
-    #dont forget to weight the score
-    # k = getNrOfSharedWords(row)
-    # return shortestLen*k/len(row['normalized_st'])
-    return shortestLen
-
-
-
-
-
+def getKeywordDensity(row):
+    k = getNrOfSharedWords(row)
+    if k == 0:
+        return 0
+    count = 0
+    for w in row['normalized_pd']:
+        if w in row['normalized_st']:
+            count += 1
+    return count/k
 

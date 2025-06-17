@@ -75,4 +75,43 @@ First correlation test:
     Looking at the correlation matrix it seems that pd_idf_score correlates
     the least with all_words in title and qf_score, the ones we want to keep.
     So we decided to keep pd_idf_score and get rid of the other 3.
+proximity score:
+    We made a feature that does proximity search of the search terms in the
+    product description. That means it looks at all search terms, and see how
+    close these terms are to eachother in the product description. The idea
+    is that if the terms are closer to eachother then theres a strong
+    connection between de search query and the product; the terms are
+    of high meaning to the product. We used the plane-sweep-algorithm
+    from thise paper https://www.researchgate.net/publication/298281987_Fast_algorithms_for_k-word_proximity_search.
+    The idea is to find the smallest window with that contain all terms from the query.
+    The smaller the window the higher the score. So we took the reciprocal of
+    the window size. But also we dont want longer search queries to get lower score
+    compared to short queries. It is harder to find smaller windows the more words you have.
+    So we multiply the score by size of the query set. Ofcourse not all search terms
+    occur in the product description. So we only look at the words that do occur.
+    If that set is of size 1 it is a problem that it gets a very high score. 
+    So for a set of size 1 we return 0, we also do that for a set of size 0.
+    It turns out that the weighting of k does improve the r-squared of the linear regression.
+    The proportional ordinal confusion matrix is poor. It only tries to predict
+    relevance 3. We realised that increasing the k actually makes the feature
+    correlate more and more witht he amount of shared words. Which correlates with
+    all_words_in_title. So the more were gonna weigh k in the proximity score the more
+    the feature will look like all_words_in_title. So we hhave to remove k weighting.
+    We were trying to figure out how to make this feature work.
+    But since most of the queries are of quite short length, the proximity of the words
+    are not weighing that much in how relevant a product is.
+    But still trying to make it work, we tried to remove the weight and
+    change prox_score = 1/distance of words
+    to prox_score = 1/sqrt(distance of words)
+    This makes queries with a smaller distance get a bit of higher score.
+    So the smaller the distance the bigger the score increase. This makes the makes
+    the distance weight a little stronger, its like amplifying the distance.
+    The r-squared turned to 0.02, which is an improvement. But the logistic predictions
+    are still poor. As seen from the scatter plot, most of the tuples
+    have around the same prox_score. Again probably because the queries are fairly short of length.
+KeywordDensity:
+    We figured the amount of occurrences of the search term inside the product description 
+    also relates to the relevance.
+    So we implemented that
 
+    
