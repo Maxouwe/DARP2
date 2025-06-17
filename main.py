@@ -26,24 +26,30 @@ nqpdf = pd.read_csv("resources/normalized_qp.csv")
 npddf = pd.read_csv("resources/normalized_pd.csv")
 pos_lists = pd.read_csv("resources/word_positions.csv")
 vecsims = pd.read_csv("resources/qp_with_vecsim.csv")
+allwords = pd.read_csv("resources/all_words_in_title_score.csv")
+earlywords = pd.read_csv("resources/average_early_score.csv")
+qf = pd.read_csv("resources/qf_score.csv")
+idf = pd.read_csv("resources/pd_idf_score.csv")
+prox = pd.read_csv("resources/proximity_score.csv")
+keyword = pd.read_csv("resources/keyword_density_score.csv")
+
 df = df.join(nqpdf.set_index('id'), on='id')
 df = df.join(npddf.set_index('product_uid'), on='product_uid')
-df = df.join(pos_lists.set_index('product_uid'), on='product_uid')
 df = df.join(vecsims.set_index('id'), on='id')
+df = df.join(allwords.set_index('id'), on='id')
+df = df.join(earlywords.set_index('id'), on='id')
+df = df.join(qf.set_index('id'), on='id')
+df = df.join(idf.set_index('id'), on='id')
+df = df.join(prox.set_index('id'), on='id')
+df = df.join(keyword.set_index('id'), on='id')
 df['normalized_st'] = df['normalized_st'].apply(literal_eval)
 df['normalized_title'] = df['normalized_title'].apply(literal_eval)
 df['normalized_pd'] = df['normalized_pd'].apply(literal_eval)
-df['position_lists'] = df['position_lists'].apply(literal_eval)
 
-qfdf = pd.read_csv("resources/qf_scores.csv")
-qpidfdf = pd.read_csv("resources/qp_idf_scores.csv")
-pdidfdf = pd.read_csv("resources/pd_idf_scores.csv")
+
 
 print("start training model")
-# df['score'] = df.apply(features.getProximityScoreRow, axis = 1)
-# if os.path.exists("resources/testFeat.csv"):
-#     os.remove("resources/testFeat.csv")
-# df.to_csv("resources/testFeat.csv")
+
 
 # Set the training size
 training_size = 50000
@@ -51,22 +57,13 @@ training_size = 50000
 # Split the DataFrame into training and test sets
 train_data, test_data = train_test_split(df, test_size=(len(df) - training_size), random_state=42)
 
-# Creates a tables containing product_query_id and a score for normalized_shared_words 
-# train_data['all_words_in_title'] = train_data.apply(features.check_words, axis=1)
-# test_data['all_words_in_title'] = test_data.apply(features.check_words, axis=1)
-# train_data['qf_score'] = train_data.apply(features.getQFScore, axis=1, args=[qfdf])
-# test_data['qf_score'] = test_data.apply(features.getQFScore, axis=1, args=[qfdf])
-# train_data['pd_idf_score'] = train_data.apply(features.getPDIDFScore, axis=1, args=[pdidfdf])
-# test_data['pd_idf_score'] = test_data.apply(features.getPDIDFScore, axis=1, args=[pdidfdf])
 
-# train_data['keyword_density'] = train_data.apply(features.getKeywordDensity, axis=1)
-# test_data['keyword_density'] = test_data.apply(features.getKeywordDensity, axis=1)
 
 # Define the feature and target variables
 # X = train_data[['all_words_in_title', 'qf_score', 'pd_idf_score']]
-X = train_data['DescriptionVecSim']
+X = train_data[['all_words_in_title', 'qf_score', 'pd_idf_score','keyword_density','proximity_score', 'average_early_score', 'TitleVecSim', 'DescriptionVecSim']]
 y = train_data['relevance']
-
+print(X.describe())
 # Add a constant term to the feature variable
 # This is so the model will also create an intercept, that is coefficient B0
 X = sm.add_constant(X)
@@ -80,7 +77,7 @@ model = sm.OLS(y, X)
 # If not then we should adjust/make a new feature
 # Here you can see normalized_shared_words is a significant feature
 results = model.fit()
-print(X.describe())
+
 print(results.summary())
 
 #results now contain the model for the relevance score based on your features
@@ -88,7 +85,7 @@ print(results.summary())
 #and compare output of the model with the actual relevance of the test data
 
 # X_test = test_data[['all_words_in_title','qf_score','pd_idf_score']]
-X_test = test_data['DescriptionVecSim']
+X_test = test_data[['all_words_in_title', 'qf_score', 'pd_idf_score','keyword_density','proximity_score', 'average_early_score', 'TitleVecSim', 'DescriptionVecSim']]
 y_test = test_data['relevance']
 
 #so the B0 coefficient also gets taken into the calculation
@@ -122,25 +119,25 @@ weights = [weight_counter[i]/10 for i in y_test]
 #x-axis is score for normalized_shared_words
 #y-axis is the relevance 
 #make scatter plot
-plt.scatter(test_data['DescriptionVecSim'], y_test, label='Actual', s=weights)
+# plt.scatter(test_data['average_early_score'], y_test, label='Actual', s=weights)
 
-#also make a line for how the model predicts relevance score based on the feature
-#you can see the model predicts if normalized_shared_words = 1 then relevance score is higher
-plt.plot(test_data['DescriptionVecSim'], y_pred, color='red', label='Fitted Line')
+# #also make a line for how the model predicts relevance score based on the feature
+# #you can see the model predicts if normalized_shared_words = 1 then relevance score is higher
+# plt.plot(test_data['average_early_score'], y_pred, color='red', label='Fitted Line')
 
-plt.xlabel('DescriptionVecSim')
-plt.ylabel('Relevance Score')
-plt.title('Linear Regression: Fitted Line')
-plt.legend()
+# plt.xlabel('average_early_score')
+# plt.ylabel('Relevance Score')
+# plt.title('Linear Regression: Fitted Line')
+# plt.legend()
 
 #all the previous plt.f() calls modify some plot object
 #call plt.show() to actually show the plot
-plt.show()
+# plt.show()
 
 #check correlation between features
-# correlation_matrix = np.corrcoef(train_data[['all_words_in_title', 'qf_score','pd_idf_score']].T)
-# smg.plot_corr(correlation_matrix,  xnames=[ 'all_words_in_title', 'qf_score','pd_idf_score'])
-# plt.show()
+correlation_matrix = np.corrcoef(train_data[['all_words_in_title', 'qf_score', 'pd_idf_score','keyword_density','proximity_score', 'average_early_score', 'TitleVecSim', 'DescriptionVecSim']].T)
+smg.plot_corr(correlation_matrix,  xnames=['all_words_in_title', 'qf_score', 'pd_idf_score','keyword_density','proximity_score', 'average_early_score', 'TitleVecSim', 'DescriptionVecSim'])
+plt.show()
 
 ##########################################################################################################
 #so that concludes the linear regression part now there will be an example for ordinal logistic regression
@@ -161,7 +158,7 @@ logit_test_data = test_data.where(test_data.relevance == np.floor(test_data.rele
 #the normalized_shared_words feature was already applied to the data in the linear regression section
 #ordinal logistic regression does not use an intercept so we dont add a column of 1's to X like we did in linear regression
 # X = logit_train_data[[ 'all_words_in_title', 'qf_score', 'pd_idf_score']]
-X = logit_train_data['DescriptionVecSim']
+X = logit_train_data[['all_words_in_title', 'qf_score', 'pd_idf_score','keyword_density','proximity_score', 'average_early_score', 'TitleVecSim', 'DescriptionVecSim']]
 y = logit_train_data['relevance']
 
 
@@ -185,7 +182,7 @@ print(logit_results.summary())
 
 #now we are going to test the model on the test data
 # X_test = logit_test_data[[ 'all_words_in_title', 'qf_score', 'pd_idf_score']]
-X_test = logit_test_data['DescriptionVecSim']
+X_test = logit_test_data[['all_words_in_title', 'qf_score', 'pd_idf_score','keyword_density','proximity_score', 'average_early_score', 'TitleVecSim', 'DescriptionVecSim']]
 y_test = logit_test_data['relevance']
 
 
@@ -261,7 +258,7 @@ print(logit_results.summary())
 
 #now we are going to test the model on the test data
 # X_test = logit_test_data[['all_words_in_title', 'qf_score', 'pd_idf_score']]
-X_test = logit_test_data['DescriptionVecSim']
+X_test = logit_test_data[['all_words_in_title', 'qf_score', 'pd_idf_score','keyword_density','proximity_score', 'average_early_score', 'TitleVecSim', 'DescriptionVecSim']]
 y_test = logit_test_data['relevance']
 
 #see how the model classifies the test_data tuples

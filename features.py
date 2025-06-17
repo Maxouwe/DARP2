@@ -94,7 +94,7 @@ def getProximityScoreRow(row):
     pos_lists = dict(row['position_lists'])
 
     currentInterval = list()
-    shortestLen = 2**31
+    shortestLen = len(row['normalized_pd'])
     k = getNrOfSharedWords(row)
     if k == 0:
         return 0
@@ -167,4 +167,30 @@ def add_vector_similarities(df, model):
 
     return df
 
-
+#calculates how early the query terms in the description
+#the earlier the better
+#averages over all 
+def averageEarlyScore(row):
+    k = getNrOfSharedWords(row)
+    scores = []
+    for term in set(row['normalized_st']):
+        for i in range(0, len(row['normalized_pd'])):
+            if row['normalized_pd'][i] == term:
+                scores.append(i)
+                break
+    if k > 0:
+        return sum(scores)/k/len(row['normalized_pd'])
+    else:
+        return len(row['normalized_pd'])
+    
+def minimumEarlyScore(row):
+    score = len(row['normalized_pd'])
+    for term in set(row['normalized_st']):
+        for i in range(0, len(row['normalized_pd'])):
+            if i > score:
+                break
+            if row['normalized_pd'][i] == term:
+                score = i
+                break
+    return score
+    
