@@ -9,6 +9,8 @@ from collections import Counter
 import preprocessFunctions as pfs
 import os
 import descriptiveFunctions as dfs
+from preprocessFunctions import add_vector_similarities
+
 
 ##################         ##################
 ##################functions##################
@@ -78,6 +80,17 @@ def main():
     #     pdIDFScores = pfs.createIDFScores(pddf, 'normalized_pd')
     #     pdIDFScores.to_csv("resources/pd_idf_scores.csv")
 
+        # Voeg samen:
+        merged = qpdf.merge(pddf[['product_uid', 'normalized_pd']], on='product_uid', how='left')
+        merged = merged.merge(qfScores, how='cross')
+        merged = merged.merge(qp_idf_Scores, how='cross')
+        merged = merged.merge(pd_idf_Scores, how='cross')
+
+        # Voeg vector features toe
+        merged = add_vector_similarities(merged, w2v_model)
+
+        # Bewaar alles:
+        merged.to_csv("resources/qp_with_vecsim.csv", index=False)
 
 
 main()

@@ -1,5 +1,8 @@
 import pandas as pd
 import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+
+
 #these are features executed per row
 #to use these features you use d.apply(feature, axis=1, args=[arg1, arg2])
 #where d is the data you want to use the feature on
@@ -132,4 +135,35 @@ def getKeywordDensity(row):
         if w in row['normalized_st']:
             count += 1
     return count/k
+
+def get_mean_vector(model, tokens):
+    vecs = []
+    for token in tokens:
+        if token in model:
+            vecs.append(model[token])
+    if vecs:
+        return np.mean(vecs, axis=0)
+    else:
+        return np.zeros(model.vector_size)
+
+
+def add_vector_similarities(df, model):
+    title_sims = []
+    desc_sims = []
+
+    for _, row in df.iterrows():
+        query_vec = get_mean_vector(model, row['normalized_st']).reshape(1, -1)
+        title_vec = get_mean_vector(model, row['normalized_title']).reshape(1, -1)
+        desc_vec = get_mean_vector(model, row['normalized_pd']).reshape(1, -1)
+
+        title_sim = cosine_similarity(query_vec, title_vec)[0][0]
+        desc_sim = cosine_similarity(query_vec, desc_vec)[0][0]
+
+        title_sims.append(title_sim)
+        desc_sims.append(desc_sim)
+
+    df['TitleVecSim'] = title_sims
+    df['DescriptionVecSim'] = desc_sims
+
+    return df
 
