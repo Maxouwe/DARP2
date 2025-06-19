@@ -62,6 +62,13 @@ def getPredictedRelevance(row):
             classification = i + 1
     return classification
 
+def correctPrediction(row):
+    val = row['predicted_relevance'] == row['relevance']
+    if val:
+        return 1
+    else:
+        return 0
+
 def getQFScore(row, qfdf):
     intersect = set.intersection(set(row['normalized_title']), set(row['normalized_st']))
     scores = qfdf[qfdf['term'].isin(intersect)]['qfscore']

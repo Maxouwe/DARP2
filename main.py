@@ -11,6 +11,8 @@ from statsmodels.discrete.discrete_model import MNLogit
 from ast import literal_eval
 import statsmodels.graphics.api as smg
 import os
+from statsmodels.graphics.mosaicplot import mosaic
+
 #There are two sections here 
 #First section shows how to do linear regression
 #Second section shows how to do ordinal logistic regression
@@ -43,6 +45,7 @@ df = df.join(qf.set_index('id'), on='id')
 df = df.join(prox.set_index('id'), on='id')
 df = df.join(keyword.set_index('id'), on='id')
 df = df.join(pdidf.set_index('id'), on='id')
+df = df.join(tfidf.set_index('id'), on='id')
 df['normalized_st'] = df['normalized_st'].apply(literal_eval)
 df['normalized_title'] = df['normalized_title'].apply(literal_eval)
 df['normalized_pd'] = df['normalized_pd'].apply(literal_eval)
@@ -217,7 +220,7 @@ y_test.reset_index(drop=True, inplace=True)
 
 res = pd.concat([y_test, y_pred], axis=1)[['relevance','p1', 'p2', 'p3', 'predicted_relevance']]
 print(res)
-
+ordPred = res[['predicted_relevance', 'relevance']]
 
 #you can read the confusion matrix as follows
 #on the bottom you read predicted class 0 to 2 (which is relevance level 1 to 3)
@@ -291,6 +294,7 @@ y_test.reset_index(drop=True, inplace=True)
 #so our model predicts every tuple to be of relevance level 3
 res = pd.concat([y_test, y_pred], axis=1)[['relevance','p1', 'p2', 'p3', 'predicted_relevance']]
 print(res)
+multPred = res[['predicted_relevance', 'relevance']]
 
 
 #you can read the confusion matrix as follows
@@ -306,3 +310,35 @@ cm = confusion_matrix(y_test, y_pred['predicted_relevance'])
 disp = ConfusionMatrixDisplay(confusion_matrix= cm)
 disp.plot()
 plt.show()
+
+
+
+ordPred = pd.DataFrame(ordPred)
+ordPred['regression'] = 'ordinal'
+ordPred['predicted'] = ordPred.apply(features.correctPrediction, axis=1)
+print(ordPred)
+
+multPred = pd.DataFrame(multPred)
+multPred['regression'] = 'multinomial'
+multPred['predicted'] = multPred.apply(features.correctPrediction, axis=1)
+
+print(multPred)
+
+merged = pd.concat([ordPred, multPred], ignore_index=True)
+
+print(merged.columns)
+
+tab = pd.crosstab(merged['regression'], merged['predicted_relevance'])
+print(tab)
+
+
+tab = pd.crosstab(merged['regression'], merged['predicted'])
+print(tab)
+
+table = np.asarray([[tab[1][0], tab[0][0]], [tab[1][1], tab[0][1]]])
+table = sm.stats.Table2x2(table)
+print(table)
+print(table.summary())
+
+
+
