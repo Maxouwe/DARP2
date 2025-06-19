@@ -131,6 +131,18 @@ def createIDFScores(df, columnName):
         idfdf.loc[len(idfdf)] = [term, np.log(N/documentFrequencies[term])]
     return idfdf
 
+def getTermFrequencies(row):
+    counts = dict()
+    for token in row['normalized_pd']:
+        if token in row['normalized_st']:
+            if token in counts:
+                counts[token] += 1
+            else:
+                counts[token] = 1
+    for term in counts:
+        counts[term] = np.log(1+counts[term])
+    return counts
+
 def updateTermFrequenciesRow(row, documentFrequencies, columnName):
     #we dont want to increment for duplicates
     rowe = set(row[columnName])
@@ -139,6 +151,16 @@ def updateTermFrequenciesRow(row, documentFrequencies, columnName):
             documentFrequencies[token] += 1
         else:
             documentFrequencies[token] = 1
+
+def getTFIDFScore(row, idfdf):
+    intersect = set.intersection(set(row['normalized_pd']), set(row['normalized_st']))
+    freqs = dict(row['term_freqs'])
+    scores = []
+    for term in intersect:
+        idf = idfdf[idfdf['term']==term]['idfscore'].iloc[0]
+        score = idf*freqs[term]
+        scores.append(score)
+    return sum(scores)
 
 def createPosLists(pddf):
     posdf = pd.DataFrame(columns = ['product_uid', 'position_lists'])

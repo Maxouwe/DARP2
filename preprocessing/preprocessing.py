@@ -43,8 +43,8 @@ def main():
         normalizeCSV(pddf, 'product_description')    
         pddf.to_csv("resources/normalized_pd.csv")
 
-    pddf = pd.read_csv("resources/normalized_pd.csv", encoding="latin1")
-    pfs.turnStringFieldToList(pddf, 'normalized_pd')
+    # pddf = pd.read_csv("resources/normalized_pd.csv", encoding="latin1")
+    # pfs.turnStringFieldToList(pddf, 'normalized_pd')
 
 
     #normalize queries and product title
@@ -84,6 +84,71 @@ def main():
     #     pdIDFScores = pfs.createIDFScores(pddf, 'normalized_pd')
     #     pdIDFScores.to_csv("resources/pd_idf_scores.csv")
 
+    if not os.path.exists("resources/term_freqs.csv"):
+        # Specify the path to your CSV file
+        csv_path = "resources/query_product.csv"
+
+        # Read the CSV file into a pandas DataFrame
+        df = pd.read_csv(csv_path, encoding="latin1")
+        
+        nqpdf = pd.read_csv("resources/normalized_qp.csv")
+        npddf = pd.read_csv("resources/normalized_pd.csv")
+        df = df.join(nqpdf.set_index('id'), on='id')
+        df = df.join(npddf.set_index('product_uid'), on='product_uid')
+        df['normalized_st'] = df['normalized_st'].apply(literal_eval)
+        df['normalized_title'] = df['normalized_title'].apply(literal_eval)
+        df['normalized_pd'] = df['normalized_pd'].apply(literal_eval)
+        df['term_freqs'] = df.apply(pfs.getTermFrequencies, axis=1)
+        df = df.drop('product_uid', axis=1)
+        df = df.drop('search_term', axis=1)
+        df = df.drop('relevance', axis=1)
+        df = df.drop('normalized_title', axis=1)
+        df = df.drop('normalized_st', axis=1)
+        df = df.drop('normalized_pd', axis=1)
+        df = df.drop('product_title', axis=1)
+        df.to_csv("resources/term_freqs.csv", index=False)
+    
+    if not os.path.exists("resources/tfidf_score.csv"):
+        df = pd.read_csv("resources/query_product.csv", encoding="latin1")
+        print("done reading1")
+        df = df.drop('product_title', axis=1)
+        df = df.drop('search_term', axis=1)
+        df = df.drop('relevance', axis=1)
+
+
+        nqpdf = pd.read_csv("resources/normalized_qp.csv")
+        print("done reading 2")
+        nqpdf = nqpdf.drop('normalized_title', axis=1)
+        
+
+        npddf = pd.read_csv("resources/normalized_pd.csv")
+        tfdf = pd.read_csv("resources/term_freqs.csv")
+        print("done reading 2")
+
+
+        df = pd.merge(df, tfdf, on='id', how='inner')
+        df = pd.merge(df, nqpdf, on='id', how='inner')
+        df = pd.merge(df, npddf, on='product_uid', how='inner')
+        
+        print("done merging")
+
+        df = df.drop('product_uid', axis=1)
+        
+        df['normalized_st'] = df['normalized_st'].apply(literal_eval)
+        df['normalized_pd'] = df['normalized_pd'].apply(literal_eval)
+        df['term_freqs'] = df['term_freqs'].apply(literal_eval)
+
+        idfdf = pd.read_csv("resources/pd_idf_scores.csv")
+        print("start applying")
+        df['tfidf'] = df.apply(pfs.getTFIDFScore, axis=1, args=[idfdf])
+        
+        df = df.drop('normalized_st', axis=1)
+        df = df.drop('normalized_pd', axis=1)
+        df = df.drop('term_freqs', axis=1)
+
+        print("IO")
+
+        df.to_csv("resources/tfidf_score.csv", index=False)
 
     #word embedding
     if not os.path.exists("resources/qp_with_vecsim.csv"):

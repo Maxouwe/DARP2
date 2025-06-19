@@ -113,6 +113,17 @@ KeywordDensity:
     We figured the amount of occurrences of the search term inside the product description 
     also relates to the relevance.
     So we implemented that
-
+pd_idf_score:
+    the pd_idf_score seemed to correlated strongly with most of the features
+    so we wanted to improve this feature. First we thought of changing it to
+    tf*idf, where tf is the term frequency of the query term in the product description.
+    But then we realized it would still correlated strongly with other features
+    for example keyword density which also relies on the amount of occurences of the query
+    term in the product description. We though of using tf = log(1 + termcount)
+    so that extreme cases of high term counts get dampened and thus
+    dampen the strong correlation with other features that rely on pure termcounts.
+    The +1 in the log is so that we dont have to deal with the case of termcounts = 0.
+    If termcounts = 0 then the log is minus infinity, so we add + 1 so remove this case.
+    
 
     

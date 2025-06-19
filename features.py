@@ -51,7 +51,6 @@ def getWordDifferenceRatio(row):
     un = set.union(title, st)
     return len(diff)/len(un)
 
-
 #gets the relevance rating according to ordinal logistic regression
 def getPredictedRelevance(row):
     probs = [row['p1'], row['p2'], row['p3']]
@@ -75,7 +74,10 @@ def getTitleIDFScore(row, idfdf):
 
 def getPDIDFScore(row, idfdf):
     intersect = set.intersection(set(row['normalized_pd']), set(row['normalized_st']))
-    scores = idfdf[idfdf['term'].isin(intersect)]['idfscore']
+    freqs = dict(row['term_freqs'])
+    scores = []
+    for term in intersect:
+        scores.append(idfdf[idfdf['term']==term]['idfscore'][0] * freqs[term])
     return scores.sum()
 
 #needed to weight the proximity score
@@ -85,7 +87,6 @@ def getNrOfSharedWords(row):
         if w in row['position_lists']:
             shared_words+= 1
     return shared_words
-
 
 
 def getProximityScoreRow(row):
